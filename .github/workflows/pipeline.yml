@@ -1,0 +1,48 @@
+name: CI/CD Devops Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+    # Stage 1 & 2: Checkout Source Code
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    # Stage 3: Continuous Integration (Dependencies & Tests)
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Run Automated Tests
+      run: python -m unittest test_calculator.py
+
+    # Stage 4: Build & Push Docker Image (Only if tests pass)
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/student-calculator:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/student-calculator:v${{ github.run_number }}
+
+    # Stage 5: Deployment (Update Kubernetes manifest configuration)
+    - name: Set up Kustomize / Update Manifest Tags
+      run: |
+        sed -i "s/DOCKERHUB_USERNAME/${{ secrets.DOCKERHUB_USERNAME }}/g" k8s/k8s-deployment.yaml
+        sed -i "s/TAG_PLACEHOLDER/v${{ github.run_number }}/g" k8s/k8s-deployment.yaml
+        
+    - name: Dry-run Deployment Verification
+      run: |
+        echo "Exposing application through a Service using image tag: v${{ github.run_number }}"
