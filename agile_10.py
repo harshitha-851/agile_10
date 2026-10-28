@@ -32,14 +32,29 @@ class StudentCalculator:
         total = sum(self.marks)
         average = total / len(self.marks)
         return total, average
-
+    def determine_grade(self, average):
+        if average >= 90:
+            return "A"
+        elif average >= 80:
+            return "B"
+        elif average >= 70:
+            return "C"
+        elif average >= 60:
+            return "D"
+        else:
+            return "F"
     def display_results(self):
         if not self.marks:
             return
         total, average = self.calculate_results()
+        
+        # Call the new grade calculation code
+        grade = self.determine_grade(average)
+        
         print("\n--- Performance Summary ---")
         print(f"Total Marks:   {total:.2f}")
         print(f"Average Marks: {average:.2f}%")
+        print(f"Final Grade:   {grade}") 
 if __name__ == "__main__":
     calc = StudentCalculator()
     if calc.get_inputs():
